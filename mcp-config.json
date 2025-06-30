@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "linkedin-mcp": {
+      "command": "node",
+      "args": ["/Users/gcao/ai/claude-as-agent/tools/mcp-backend/dist/index.js"],
+      "env": {
+        "PORT": "3636"
+      }
+    }
+  }
+}
