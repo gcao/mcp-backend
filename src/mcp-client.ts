@@ -57,6 +57,93 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
+        name: 'browser_execute',
+        description: 'Execute JavaScript code in the browser on any webpage. Returns the result of the code execution.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            code: {
+              type: 'string',
+              description: 'JavaScript code to execute',
+            },
+            url: {
+              type: 'string',
+              description: 'URL to navigate to (optional, uses current page if not provided)',
+            },
+            targetSite: {
+              type: 'string',
+              description: 'Site identifier for site-specific behavior (optional)',
+            },
+            timeout: {
+              type: 'number',
+              description: 'Execution timeout in milliseconds',
+              default: 30000,
+            },
+          },
+          required: ['code'],
+        },
+      },
+      {
+        name: 'browser_capture_dom',
+        description: 'Capture DOM content and metadata from the current page',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            selector: {
+              type: 'string',
+              description: 'CSS selector to capture specific element (optional, captures full page if not provided)',
+            },
+            includeMetadata: {
+              type: 'boolean',
+              description: 'Include page metadata (URL, title, etc.)',
+              default: true,
+            },
+          },
+        },
+      },
+      {
+        name: 'browser_capture_screenshot',
+        description: 'Capture a screenshot of the current page or a specific element',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            selector: {
+              type: 'string',
+              description: 'CSS selector to capture specific element (optional)',
+            },
+            fullPage: {
+              type: 'boolean',
+              description: 'Capture full scrollable page (not just visible viewport)',
+              default: false,
+            },
+            quality: {
+              type: 'number',
+              description: 'Image quality (1-100)',
+              default: 100,
+            },
+          },
+        },
+      },
+      {
+        name: 'browser_navigate',
+        description: 'Navigate to a URL and wait for it to load',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            url: {
+              type: 'string',
+              description: 'URL to navigate to',
+            },
+            waitFor: {
+              type: 'string',
+              description: 'CSS selector or JS condition to wait for',
+              default: "document.readyState === 'complete'",
+            },
+          },
+          required: ['url'],
+        },
+      },
+      {
         name: 'create_linkedin_post',
         description: 'Create a LinkedIn post with the provided content',
         inputSchema: {
@@ -126,15 +213,135 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (name) {
+      case 'browser_execute': {
+        const response = await fetch(`${BACKEND_URL}/api/tools/browser_execute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args),
+        });
+
+        const result: any = await response.json();
+
+        if (response.ok && result.success) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result.result, null, 2),
+              },
+            ],
+          };
+        } else {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${result.error || 'Failed to execute browser code'}`,
+              },
+            ],
+          };
+        }
+      }
+
+      case 'browser_capture_dom': {
+        const response = await fetch(`${BACKEND_URL}/api/tools/browser_capture_dom`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args),
+        });
+
+        const result: any = await response.json();
+
+        if (response.ok && result.success) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result.result, null, 2),
+              },
+            ],
+          };
+        } else {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${result.error || 'Failed to capture DOM'}`,
+              },
+            ],
+          };
+        }
+      }
+
+      case 'browser_capture_screenshot': {
+        const response = await fetch(`${BACKEND_URL}/api/tools/browser_capture_screenshot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args),
+        });
+
+        const result: any = await response.json();
+
+        if (response.ok && result.success) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result.result, null, 2),
+              },
+            ],
+          };
+        } else {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${result.error || 'Failed to capture screenshot'}`,
+              },
+            ],
+          };
+        }
+      }
+
+      case 'browser_navigate': {
+        const response = await fetch(`${BACKEND_URL}/api/tools/browser_navigate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(args),
+        });
+
+        const result: any = await response.json();
+
+        if (response.ok && result.success) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: result.message,
+              },
+            ],
+          };
+        } else {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error: ${result.error || 'Failed to navigate'}`,
+              },
+            ],
+          };
+        }
+      }
+
       case 'create_linkedin_post': {
         const response = await fetch(`${BACKEND_URL}/api/tools/create_linkedin_post`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(args),
         });
-        
+
         const result: any = await response.json();
-        
+
         if (response.ok && result.success) {
           return {
             content: [
@@ -155,11 +362,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
       }
-      
+
       case 'get_post_data': {
         const response = await fetch(`${BACKEND_URL}/api/tools/get_post_data`);
         const result: any = await response.json();
-        
+
         if (!result.data) {
           return {
             content: [
@@ -170,7 +377,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             ],
           };
         }
-        
+
         return {
           content: [
             {
@@ -180,16 +387,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ],
         };
       }
-      
+
       case 'show_linkedin_alert': {
         const response = await fetch(`${BACKEND_URL}/api/tools/show_linkedin_alert`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(args),
         });
-        
+
         const result: any = await response.json();
-        
+
         if (response.ok && result.success) {
           return {
             content: [
@@ -210,7 +417,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
       }
-      
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -230,13 +437,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // Start MCP server
 async function main() {
   log('INFO', 'Starting MCP client...');
-  
+
   // Check backend connection
   const backendAvailable = await checkBackend();
   if (!backendAvailable) {
     log('WARN', 'Backend server not available. Tools will fail until backend is running.');
   }
-  
+
   // Start MCP server on stdio
   const transport = new StdioServerTransport();
   await server.connect(transport);
